@@ -27,7 +27,10 @@
 void FadeOut(int = 10, int = 0);
 void FadeIn(int = 10, int = 0);
 
-
+//// Network Config
+String matrixIp = "";
+String matrixGateway = "";
+String matrixSubNet = "";
 
 //// MQTT Config
 bool mqttAktiv = false;
