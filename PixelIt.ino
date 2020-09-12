@@ -46,7 +46,7 @@ int mqttMaxRetrys = 3;
 #define LDR_PHOTOCELL LightDependentResistor::GL5516
 
 //// Matrix Config
-#define MATRIX_PIN D2
+#define MATRIX_PIN D4
 
 #define NUMMATRIX (32 * 8)
 CRGB leds[NUMMATRIX];
@@ -1735,7 +1735,7 @@ void setup()
 {
 
 	Serial.begin(115200);
-
+  pinMode(MATRIX_PIN, OUTPUT);
 	// Mounting FileSystem
 	Serial.println(F("Mounting file system..."));
 	if (SPIFFS.begin())
