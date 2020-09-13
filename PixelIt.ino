@@ -12,10 +12,7 @@
 #include <Adafruit_GFX.h>
 #include <FastLED.h>
 #include <FastLED_NeoMatrix.h> // https://github.com/o0shojo0o/FastLED_NeoMatrix and https://github.com/o0shojo0o/Framebuffer_GFX
-#include <LightDependentResistor.h> // https://github.com/o0shojo0o/Arduino-Light-Dependent-Resistor-Library v1.0.0!!!
-#include <DHTesp.h>
-#include <DFPlayerMini_Fast.h>
-#include <SoftwareSerial.h>
+
 // PixelIT Stuff 
 #include "PixelItFont.h"
 #include "Webinterface.h"
@@ -40,13 +37,8 @@ int mqttRetryCounter = 0;
 int mqttMaxRetrys = 3;
 
 
-//// LDR Config
-#define LDR_RESISTOR 10000 //ohms
-#define LDR_PIN A0
-#define LDR_PHOTOCELL LightDependentResistor::GL5516
-
 //// Matrix Config
-#define MATRIX_PIN D4
+#define MATRIX_PIN 2
 
 #define NUMMATRIX (32 * 8)
 CRGB leds[NUMMATRIX];
@@ -81,10 +73,7 @@ WiFiManager wifiManager;
 ESP8266WebServer server(80);
 WebSocketsServer webSocket = WebSocketsServer(81);
 ESP8266HTTPUpdateServer httpUpdater;
-LightDependentResistor photocell(LDR_PIN, LDR_RESISTOR, LDR_PHOTOCELL);
-DHTesp dht;
-DFPlayerMini_Fast mp3Player;
-SoftwareSerial softSerial(D7, D8); // RX | TX
+
 
 // Matrix Vars
 int matrixtBrightness = 127;
@@ -142,15 +131,8 @@ int animateBMPLimitFrames = -1;
 int animateBMPFrameCount = 0;
 
 // Sensors Vars 
-uint sendLuxPrevMillis = 0;
-uint sendDHTPrevMillis = 0;
 uint sendInfoPrevMillis = 0;
 String OldGetMatrixInfo;
-String OldGetLuxSensor;
-String OldGetDHTSensor;
-
-// MP3Player Vars
-String OldGetMP3PlayerInfo;
 
 // Websoket Vars
 String websocketConnection[10];
@@ -474,18 +456,6 @@ void HandleGetConfig()
 	server.send(200, "application/json", GetConfig());
 }
 
-void HandleGetLuxSensor()
-{
-	server.sendHeader("Connection", "close");
-	server.send(200, "application/json", GetLuxSensor());
-}
-
-void HandleGetDHTSensor()
-{
-	server.sendHeader("Connection", "close");
-	server.send(200, "application/json", GetDHTSensor());
-}
-
 void HandleGetMatrixInfo()
 {
 	server.sendHeader("Connection", "close");
@@ -541,10 +511,6 @@ void callback(char* topic, byte* payload, unsigned int length)
 		{
 			CreateFrames(json);
 		}
-		else if (channel.equals("getLuxsensor"))
-		{
-			client.publish((mqttMasterTopic + "luxsensor").c_str(), GetLuxSensor().c_str());
-		}
 		else if (channel.equals("getMatrixinfo"))
 		{
 			client.publish((mqttMasterTopic + "matrixinfo").c_str(), GetMatrixInfo().c_str());
@@ -585,8 +551,6 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
 
 		// send message to client
 		SendMatrixInfo(true);
-		SendLDR(true);
-		SendDHT(true);
 		SendConfig();
 		break;
 	}
@@ -634,45 +598,6 @@ void CreateFrames(JsonObject& json)
 		logMessage += F("Brightness Control, ");
 		matrixtBrightness = json["brightness"];
 	}
-
-	// Sound
-	if (json.containsKey("sound"))
-	{
-		logMessage += F("Sound, ");
-		// Volume
-		if (json["sound"]["volume"] != NULL && json["sound"]["volume"].is<int>())
-		{
-			mp3Player.volume(json["sound"]["volume"].as<int>());
-		}
-		// Play
-		if (json["sound"]["control"] == "play")
-		{
-			if (json["sound"]["folder"])
-			{
-				mp3Player.playFolder(json["sound"]["folder"].as<int>(), json["sound"]["file"].as<int>());
-			}
-			else
-			{
-				mp3Player.play(json["sound"]["file"].as<int>());
-			}
-		}
-		// Stop
-		else if (json["sound"]["control"] == "pause")
-		{
-			mp3Player.pause();
-		}
-		// Play Next
-		else if (json["sound"]["control"] == "next")
-		{
-			mp3Player.playNext();
-		}
-		// Play Previous 
-		else if (json["sound"]["control"] == "previous")
-		{
-			mp3Player.playPrevious();
-		}
-	}
-
 
 	// SleepMode
 	if (json.containsKey("sleepMode"))
@@ -940,42 +865,7 @@ String GetConfig()
 	}
 }
 
-String GetDHTSensor()
-{
-	DynamicJsonBuffer jsonBuffer;
-	JsonObject& root = jsonBuffer.createObject();
 
-	float humidity = roundf(dht.getHumidity());
-	float temperature = dht.getTemperature();
-
-	if (isnan(humidity) || isnan(temperature))
-	{
-		root["humidity"] = "Not installed";
-		root["temperature"] = "Not installed";
-	}
-	else
-	{
-		root["humidity"] = humidity;
-		root["temperature"] = temperature;
-	}
-	String json;
-	root.printTo(json);
-
-	return json;
-}
-
-String GetLuxSensor()
-{
-	DynamicJsonBuffer jsonBuffer;
-	JsonObject& root = jsonBuffer.createObject();
-
-	root["lux"] = roundf(photocell.getCurrentLux() * 1000) / 1000;
-
-	String json;
-	root.printTo(json);
-
-	return json;
-}
 
 /*
 String GetMp3PlayerInfo()
@@ -1759,8 +1649,6 @@ void setup()
 		matrix = new FastLED_NeoMatrix(leds, 32, 8, NEO_MATRIX_TOP + NEO_MATRIX_LEFT + NEO_MATRIX_ROWS + NEO_MATRIX_ZIGZAG);
 	}
 
-	// Init LightSensor
-	photocell.setPhotocellPositionOnGround(false);
 
 	ColorTemperature userColorTemp = GetUserColorTemp();;
 	LEDColorCorrection userLEDCorrection = GetUserColorCorrection();
@@ -1822,8 +1710,6 @@ void setup()
 	httpUpdater.setup(&server);
 
 	server.on(F("/api/screen"), HTTP_POST, HandleScreen);
-	server.on(F("/api/luxsensor"), HTTP_GET, HandleGetLuxSensor);
-	server.on(F("/api/dhtsensor"), HTTP_GET, HandleGetDHTSensor);
 	server.on(F("/api/matrixinfo"), HTTP_GET, HandleGetMatrixInfo);
 	//server.on(F("/api/soundinfo"), HTTP_GET, HandleGetSoundInfo);
 	server.on(F("/api/config"), HTTP_POST, HandleSetConfig);
@@ -1850,14 +1736,6 @@ void setup()
 		Log(F("Setup"), F("MQTT started"));
 	}
 
-	dht.setup(D1, DHTesp::DHT22);
-	Log(F("Setup"), F("DHT started"));
-
-	softSerial.begin(9600);
-	Log(F("Setup"), F("Software Serial started"));
-
-	mp3Player.begin(softSerial);
-	Log(F("Setup"), F("DFPlayer started"));
 
 }
 
@@ -1892,26 +1770,6 @@ void loop()
 			Log(F("Sync TimeServer"), ntpServer + ": " + timeServerIP.toString() + " waiting for sync");
 			setSyncProvider(getNtpTime);
 		}
-	}
-
-
-	if (millis() - sendLuxPrevMillis >= 1000)
-	{
-		sendLuxPrevMillis = millis();
-		SendLDR(false);
-	}
-
-	if (millis() - sendDHTPrevMillis >= 3000)
-	{
-		sendDHTPrevMillis = millis();
-		SendDHT(false);
-	}
-
-	if (millis() - sendInfoPrevMillis >= 3000)
-	{
-		sendInfoPrevMillis = millis();
-		SendMatrixInfo(false);
-		//SendMp3PlayerInfo(false);
 	}
 
 
@@ -1964,73 +1822,9 @@ void SendMatrixInfo(bool force)
 	OldGetMatrixInfo = matrixInfo;
 }
 
-void SendLDR(bool force)
-{
-	if (force)
-	{
-		OldGetLuxSensor = "";
-	}
 
-	String luxSensor;
 
-	// Prüfen ob die Abfrage des LuxSensor überhaupt erforderlich ist
-	if ((mqttAktiv == true && mqttRetryCounter < mqttMaxRetrys) || (webSocket.connectedClients() > 0))
-	{
-		luxSensor = GetLuxSensor();
-	}
-	// Prüfen ob über MQTT versendet werden muss
-	if (mqttAktiv == true && mqttRetryCounter < mqttMaxRetrys && OldGetLuxSensor != luxSensor)
-	{
-		client.publish((mqttMasterTopic + "luxsensor").c_str(), luxSensor.c_str(), true);
-	}
-	// Prüfen ob über Websocket versendet werden muss
-	if (webSocket.connectedClients() > 0 && OldGetLuxSensor != luxSensor)
-	{
-		for (int i = 0; i < sizeof websocketConnection / sizeof websocketConnection[0]; i++)
-		{
-			if (websocketConnection[i] == "/dash" || websocketConnection[i] == "/lux")
-			{
-				webSocket.sendTXT(i, luxSensor);
-			}
-		}
-	}
 
-	OldGetLuxSensor = luxSensor;
-}
-
-void SendDHT(bool force)
-{
-	if (force)
-	{
-		OldGetDHTSensor = "";
-	}
-
-	String dhtSensor;
-
-	// Prüfen ob die Abfrage des LuxSensor überhaupt erforderlich ist
-	if ((mqttAktiv == true && mqttRetryCounter < mqttMaxRetrys) || (webSocket.connectedClients() > 0))
-	{
-		dhtSensor = GetDHTSensor();
-	}
-	// Prüfen ob über MQTT versendet werden muss
-	if (mqttAktiv == true && mqttRetryCounter < mqttMaxRetrys && OldGetDHTSensor != dhtSensor)
-	{
-		client.publish((mqttMasterTopic + "dhtsensor").c_str(), dhtSensor.c_str(), true);
-	}
-	// Prüfen ob über Websocket versendet werden muss
-	if (webSocket.connectedClients() > 0 && OldGetDHTSensor != dhtSensor)
-	{
-		for (int i = 0; i < sizeof websocketConnection / sizeof websocketConnection[0]; i++)
-		{
-			if (websocketConnection[i] == "/dash" || websocketConnection[i] == "/dht")
-			{
-				webSocket.sendTXT(i, dhtSensor);
-			}
-		}
-	}
-
-	OldGetDHTSensor = dhtSensor;
-}
 
 /*
 void SendMp3PlayerInfo(bool force)
