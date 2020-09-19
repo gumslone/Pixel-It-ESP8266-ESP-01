@@ -12,6 +12,7 @@
 #include <Adafruit_GFX.h>
 #include <FastLED.h>
 #include <FastLED_NeoMatrix.h> // https://github.com/o0shojo0o/FastLED_NeoMatrix and https://github.com/o0shojo0o/Framebuffer_GFX
+#include <EasyButton.h>
 
 // PixelIT Stuff 
 #include "PixelItFont.h"
@@ -24,7 +25,9 @@
 void FadeOut(int = 10, int = 0);
 void FadeIn(int = 10, int = 0);
 
-
+//Button
+#define BUTTON_PIN 0
+EasyButton button(BUTTON_PIN, 40, true, true);
 
 //// MQTT Config
 bool mqttAktiv = false;
@@ -1619,6 +1622,18 @@ int DayOfWeekFirstMonday(int OrigDayofWeek)
 }
 
 /////////////////////////////////////////////////////////////////////
+//BUTTON
+    // Attach callback.
+void singleClick()
+{
+ Serial.println(F("singleClick"));
+ // Prüfen ob über MQTT versendet werden muss
+ if (mqttAktiv == true)
+  {
+    client.publish((mqttMasterTopic + "buttom").c_str(), "singleClick", true);
+  } 
+}
+
 /////////////////////////////////////////////////////////////////////
 
 void setup()
@@ -1626,6 +1641,17 @@ void setup()
 
 	Serial.begin(115200);
   pinMode(MATRIX_PIN, OUTPUT);
+
+    // Initialize the button.
+    button.begin();
+
+    // Attach callback to factory reset after 15 seconds press.
+    button.onPressedFor(15000, Handle_factoryreset);
+    
+    // Attach callback.
+    button.onPressed(singleClick);
+
+  
 	// Mounting FileSystem
 	Serial.println(F("Mounting file system..."));
 	if (SPIFFS.begin())
@@ -1742,6 +1768,8 @@ void setup()
 void loop()
 {
 
+	button.read();
+ 
 	server.handleClient();
 	webSocket.loop();
 
