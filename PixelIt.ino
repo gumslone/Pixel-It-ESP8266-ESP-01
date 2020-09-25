@@ -34,7 +34,7 @@ bool mqttAktiv = false;
 String  mqttUser = "";
 String	mqttPassword = "";
 String mqttServer = "0.0.0.0";
-String mqttMasterTopic = "Haus/PixelIt/";
+String mqttMasterTopic = "/pixelit/";
 int mqttPort = 1883;
 int mqttRetryCounter = 0;
 int mqttMaxRetrys = 3;
@@ -508,8 +508,7 @@ void callback(char* topic, byte* payload, unsigned int length)
 		DynamicJsonBuffer jsonBuffer;
 		JsonObject& json = jsonBuffer.parseObject(payload);
 
-		Log("MQTT_callback", "Incomming Json length: " + String(json.measureLength()));
-
+		Log("MQTT_callback", "Incomming Json length to topic "+String(topic)+": " + String(json.measureLength()));
 		if (channel.equals("setScreen"))
 		{
 			CreateFrames(json);
@@ -1633,7 +1632,10 @@ void singleClick()
     client.publish((mqttMasterTopic + "buttom").c_str(), "singleClick", true);
   } 
 }
-
+void dorestart()
+{
+  ESP.restart();  
+}
 /////////////////////////////////////////////////////////////////////
 
 void setup()
@@ -1650,7 +1652,8 @@ void setup()
     
     // Attach callback.
     button.onPressed(singleClick);
-
+    // Attach callback.
+    button.onSequence(5, 2000, dorestart);
   
 	// Mounting FileSystem
 	Serial.println(F("Mounting file system..."));
@@ -1759,6 +1762,7 @@ void setup()
 	{
 		client.setServer(mqttServer.c_str(), mqttPort);
 		client.setCallback(callback);
+    client.setBufferSize(4000);
 		Log(F("Setup"), F("MQTT started"));
 	}
 
