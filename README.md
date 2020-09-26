@@ -7,7 +7,7 @@ Removed MP3, LDR and DHT Libraries, changed the PIN to gpio2 so it works with ES
 
 Just flash the .bin file to your ESP-01 Module, connect the GPIO2 pin to Data Pin of the Matrix and you are good to go.
 
-Button should be connected between GPIO0 and GND, to read the button presses via MQTT use: /pixelit/Button.
+Button should be connected between GPIO0 and GND, to read the button presses via MQTT use: /pixelit/Button
 
 15 seconds long buttonpress will do a factory reset.
 
