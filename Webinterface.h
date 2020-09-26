@@ -286,7 +286,7 @@ const char dashPage[] PROGMEM = R"=====(
         </table>
     </div>
 </div>
-<div class="col-md-3">
+<!--div class="col-md-3">
     <h2 class="text-center">Sensors</h2>
     <hr>
     <div class="table-responsive">
@@ -307,8 +307,8 @@ const char dashPage[] PROGMEM = R"=====(
             </tbody>
         </table>
     </div>
-</div>
-<div class="col-md-6">
+</div-->
+<div class="col-md-9">
     <h2 class="text-center">Log</h2>
     <hr>
     <textarea class="form-control" id="log" rows="17" wrap="off" disabled style="font: 60"></textarea>
