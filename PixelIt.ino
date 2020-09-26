@@ -37,8 +37,9 @@ String mqttServer = "0.0.0.0";
 String mqttMasterTopic = "/pixelit/";
 int mqttPort = 1883;
 int mqttRetryCounter = 0;
-int mqttMaxRetrys = 3;
-
+int mqttMaxRetrys = 5;
+long mqttLastReconnectAttempt = 0;
+long mqttReconnectWait = 10000; // wait 10 seconds and try to reconnect again
 
 //// Matrix Config
 #define MATRIX_PIN 2
@@ -1293,6 +1294,7 @@ void MqttReconnect()
 		if (connected)
 		{
 			Log(F("MqttReconnect"), F("MQTT connected!"));
+      mqttRetryCounter = 0;
 			// ... and resubscribe
 			client.subscribe((mqttMasterTopic + "setScreen").c_str());
 			client.subscribe((mqttMasterTopic + "getLuxsensor").c_str());
@@ -1629,7 +1631,7 @@ void singleClick()
  // Prüfen ob über MQTT versendet werden muss
  if (mqttAktiv == true)
   {
-    client.publish((mqttMasterTopic + "buttom").c_str(), "singleClick", true);
+    client.publish((mqttMasterTopic + "Button").c_str(), "singleClick", true);
   } 
 }
 void dorestart()
@@ -1779,11 +1781,21 @@ void loop()
 
 	if (mqttAktiv == true && mqttRetryCounter < mqttMaxRetrys)
 	{
-		if (!client.connected())
-		{			
-			MqttReconnect();
-		}
-		client.loop();		
+
+		if (!client.connected()) {
+
+        Log(F("MQTT is not connected, client state:"), String(client.state()));
+        long now = millis();
+        if (now - mqttLastReconnectAttempt > mqttReconnectWait) {
+          mqttLastReconnectAttempt = now;
+          // Attempt to reconnect
+          MqttReconnect();
+        }
+      } else {
+        // Client connected
+        client.loop();
+      }
+			
 	}
 
 	if (clockAktiv && now() != clockLastUpdate && ntpRetryCounter < ntpMaxRetrys)
