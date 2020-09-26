@@ -40,7 +40,7 @@ int mqttRetryCounter = 0;
 int mqttMaxRetrys = 5;
 long mqttLastReconnectAttempt = 0;
 long mqttReconnectWait = 10000; // wait 10 seconds and try to reconnect again
-
+char data[80];
 //// Matrix Config
 #define MATRIX_PIN 2
 
@@ -1631,12 +1631,41 @@ void singleClick()
  // Prüfen ob über MQTT versendet werden muss
  if (mqttAktiv == true)
   {
-    client.publish((mqttMasterTopic + "Button").c_str(), "singleClick", true);
+    
+    String timeStamp = IntFormat(year()) + "-" + IntFormat(month()) + "-" + IntFormat(day()) + "T" + IntFormat(hour()) + ":" + IntFormat(minute()) + ":" + IntFormat(second());
+    String payload = "{\"timeStamp\":\"" + timeStamp + "\",\"action\":\"buttonPress\",\"type\":\"SingleClick\"}";
+    payload.toCharArray(data, (payload.length() + 1));
+    client.publish((mqttMasterTopic + "Button").c_str(), data, true);
   } 
 }
-void dorestart()
+void doRestart()
 {
+ Serial.println(F("5 Clicks"));
+ // Prüfen ob über MQTT versendet werden muss
+ if (mqttAktiv == true)
+  {
+    
+    String timeStamp = IntFormat(year()) + "-" + IntFormat(month()) + "-" + IntFormat(day()) + "T" + IntFormat(hour()) + ":" + IntFormat(minute()) + ":" + IntFormat(second());
+    String payload = "{\"timeStamp\":\"" + timeStamp + "\",\"action\":\"buttonPress\",\"type\":\"5Clicks\",\"message\":\"rebooting...\"}";
+    payload.toCharArray(data, (payload.length() + 1));
+    client.publish((mqttMasterTopic + "Button").c_str(), data, true);
+  } 
   ESP.restart();  
+}
+void doFactoryReset()
+{
+ Serial.println(F("15 Seconds Long Click"));
+ // Prüfen ob über MQTT versendet werden muss
+ if (mqttAktiv == true)
+  {
+    
+    String timeStamp = IntFormat(year()) + "-" + IntFormat(month()) + "-" + IntFormat(day()) + "T" + IntFormat(hour()) + ":" + IntFormat(minute()) + ":" + IntFormat(second());
+    // This sends off your payload. 
+    String payload = "{\"timeStamp\":\"" + timeStamp + "\",\"action\":\"buttonLongPress\",\"type\":\"15SecondsLongPress\",\"message\":\"factory reset...\"}";
+    payload.toCharArray(data, (payload.length() + 1));
+    client.publish((mqttMasterTopic + "Button").c_str(), data, true);
+  } 
+  Handle_factoryreset();  
 }
 /////////////////////////////////////////////////////////////////////
 
@@ -1650,12 +1679,12 @@ void setup()
     button.begin();
 
     // Attach callback to factory reset after 15 seconds press.
-    button.onPressedFor(15000, Handle_factoryreset);
+    button.onPressedFor(15000, doFactoryReset);
     
     // Attach callback.
     button.onPressed(singleClick);
     // Attach callback.
-    button.onSequence(5, 2000, dorestart);
+    button.onSequence(5, 2000, doRestart);
   
 	// Mounting FileSystem
 	Serial.println(F("Mounting file system..."));
