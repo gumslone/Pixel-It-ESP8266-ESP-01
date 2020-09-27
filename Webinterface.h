@@ -286,28 +286,6 @@ const char dashPage[] PROGMEM = R"=====(
         </table>
     </div>
 </div>
-<!--div class="col-md-3">
-    <h2 class="text-center">Sensors</h2>
-    <hr>
-    <div class="table-responsive">
-        <table class="table table-striped table-sm" id="table">
-            <tbody>
-                <tr>
-                    <td class="font-weight-bold">Lux Sensor:</td>
-                    <td id="lux">Loading...</td>
-                </tr>
-                <tr>
-                    <td class="font-weight-bold">Temperature Sensor:</td>
-                    <td id="temperature">Loading...</td>
-                </tr>
-				<tr>
-                    <td class="font-weight-bold">Humidity Sensor:</td>
-                    <td id="humidity">Loading...</td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
-</div-->
 <div class="col-md-9">
     <h2 class="text-center">Log</h2>
     <hr>

@@ -1826,7 +1826,20 @@ void loop()
       }
 			
 	}
-
+  else if(mqttAktiv == true && mqttRetryCounter == mqttMaxRetrys)
+  {
+    if (!client.connected()) {
+      
+        Log(F("MQTT is not connected, client state:"), String(client.state()));
+        long now_mil = millis();
+        if (now_mil - mqttLastReconnectAttempt > mqttReconnectWait * 120) {
+          mqttRetryCounter--;
+          mqttLastReconnectAttempt = now_mil;
+          // Attempt to reconnect
+          MqttReconnect();
+        }
+      }
+  }
 	if (clockAktiv && now() != clockLastUpdate && ntpRetryCounter < ntpMaxRetrys)
 	{
 		if (timeStatus() != timeNotSet)
