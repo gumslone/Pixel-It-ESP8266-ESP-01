@@ -13,6 +13,8 @@ Button should be connected between GPIO0 and GND, to read the button presses via
 
 5 short button presses within 2 seconds will restart the ESP8266.
 
++ Added support for a 8x8 pixel matrix (Matrix Type 3 in the web UI), the enclosure for 3D print can be downloaded from thingiverse: https://www.thingiverse.com/thing:4127790
+
 I recommend to use a ws2812b driver module for ESP-01.
 
 The WS2812 Driver for ESP-01 that im using is available at Tindie https://www.tindie.com/products/21371/ , but other ESP-01 Based drivers will work too.
